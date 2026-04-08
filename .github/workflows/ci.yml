@@ -23,4 +23,4 @@ jobs:
         run: docker build -f docker/frontend.Dockerfile -t voicechat-frontend .
 
       - name: Validate Compose Stack Start
-        run: docker-compose up -d
+        run: docker compose up -d
