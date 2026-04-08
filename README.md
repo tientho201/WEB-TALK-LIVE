@@ -67,17 +67,17 @@
 
 ## 🛠️ Tech Stack
 
-| Layer | Công nghệ |
-|---|---|
-| **Frontend** | Streamlit |
-| **Backend** | FastAPI + Uvicorn |
-| **Database** | PostgreSQL (Supabase) + SQLAlchemy ORM |
-| **Auth** | JWT (PyJWT) + bcrypt |
-| **STT** | Groq Whisper Large V3 Turbo |
-| **LLM** | OpenAI GPT-4o-mini |
-| **TTS** | Microsoft Edge TTS (primary) + OpenAI TTS (fallback) |
-| **Container** | Docker + Docker Compose |
-| **CI/CD** | GitHub Actions |
+| Layer         | Công nghệ                                            |
+| ------------- | ---------------------------------------------------- |
+| **Frontend**  | Streamlit                                            |
+| **Backend**   | FastAPI + Uvicorn                                    |
+| **Database**  | PostgreSQL (Supabase) + SQLAlchemy ORM               |
+| **Auth**      | JWT (PyJWT) + bcrypt                                 |
+| **STT**       | Groq Whisper Large V3 Turbo                          |
+| **LLM**       | OpenAI GPT-4o-mini                                   |
+| **TTS**       | Microsoft Edge TTS (primary) + OpenAI TTS (fallback) |
+| **Container** | Docker + Docker Compose                              |
+| **CI/CD**     | GitHub Actions                                       |
 
 ---
 
@@ -170,6 +170,7 @@ uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 Backend tự động:
+
 - Tạo bảng `users`, `chat_sessions`, `chats` trong DB
 - Chạy migrations an toàn nếu bảng đã tồn tại
 
@@ -239,6 +240,7 @@ docker-compose up --build
 ```
 
 Dịch vụ sẽ chạy tại:
+
 - Frontend: **http://localhost:8501**
 - Backend API: **http://localhost:8000**
 - PostgreSQL: **localhost:5432**
@@ -261,7 +263,7 @@ docker-compose down -v
 
 ```bash
 # Trên server
-git clone https://github.com/YOUR_USERNAME/WEB-TALK-LIVE.git
+git clone https://github.com/tientho201/WEB-TALK-LIVE.git
 cd WEB-TALK-LIVE
 cp .env.example .env
 nano .env   # Điền API keys thực
@@ -314,11 +316,11 @@ server {
 
 ## 🔊 Audio Storage trên Production
 
-| Môi trường | `STORAGE_BACKEND` | Mô tả |
-|---|---|---|
+| Môi trường         | `STORAGE_BACKEND`  | Mô tả                                            |
+| ------------------ | ------------------ | ------------------------------------------------ |
 | **Local / Docker** | `local` (mặc định) | Lưu vào `audio_files/`, serve qua FastAPI static |
-| **VPS với Docker** | `local` | Volume mount đảm bảo không mất file |
-| **Heroku/Railway** | `supabase` | Upload lên Supabase Storage, trả public URL |
+| **VPS với Docker** | `local`            | Volume mount đảm bảo không mất file              |
+| **Heroku/Railway** | `supabase`         | Upload lên Supabase Storage, trả public URL      |
 
 ### Cài đặt Supabase Storage
 
@@ -340,22 +342,22 @@ SUPABASE_BUCKET="audio-files"
 
 ### Auth (công khai)
 
-| Method | Endpoint | Body | Mô tả |
-|---|---|---|---|
-| `POST` | `/auth/register` | `{"username": "...", "password": "..."}` | Tạo tài khoản |
-| `POST` | `/auth/login` | `{"username": "...", "password": "..."}` | Đăng nhập, nhận JWT token |
+| Method | Endpoint         | Body                                     | Mô tả                     |
+| ------ | ---------------- | ---------------------------------------- | ------------------------- |
+| `POST` | `/auth/register` | `{"username": "...", "password": "..."}` | Tạo tài khoản             |
+| `POST` | `/auth/login`    | `{"username": "...", "password": "..."}` | Đăng nhập, nhận JWT token |
 
 ### Chat (cần JWT token trong header)
 
 Header: `Authorization: Bearer <token>`
 
-| Method | Endpoint | Params / Body | Mô tả |
-|---|---|---|---|
-| `GET` | `/sessions` | — | Lấy danh sách sessions của user |
-| `POST` | `/sessions` | `?name=...` | Tạo session mới |
-| `POST` | `/chat` | `audio` (file) + `session_id` (form) | Xử lý voice → text → AI → audio |
-| `GET` | `/chats` | `?session_id=...` | Lấy lịch sử chat của session |
-| `GET` | `/` | — | Health check |
+| Method | Endpoint    | Params / Body                        | Mô tả                           |
+| ------ | ----------- | ------------------------------------ | ------------------------------- |
+| `GET`  | `/sessions` | —                                    | Lấy danh sách sessions của user |
+| `POST` | `/sessions` | `?name=...`                          | Tạo session mới                 |
+| `POST` | `/chat`     | `audio` (file) + `session_id` (form) | Xử lý voice → text → AI → audio |
+| `GET`  | `/chats`    | `?session_id=...`                    | Lấy lịch sử chat của session    |
+| `GET`  | `/`         | —                                    | Health check                    |
 
 ### Response mẫu — `POST /chat`
 
@@ -371,13 +373,13 @@ Header: `Authorization: Bearer <token>`
 
 ## 🔒 Bảo mật
 
-| Vấn đề | Cách xử lý |
-|---|---|
-| **Password** | Hashed bằng `bcrypt` (cost factor 12), không lưu plain text |
-| **JWT Token** | Ký bằng `HS256` + `SECRET_KEY`, hết hạn sau 7 ngày |
+| Vấn đề                | Cách xử lý                                                   |
+| --------------------- | ------------------------------------------------------------ |
+| **Password**          | Hashed bằng `bcrypt` (cost factor 12), không lưu plain text  |
+| **JWT Token**         | Ký bằng `HS256` + `SECRET_KEY`, hết hạn sau 7 ngày           |
 | **Session isolation** | Mỗi user chỉ thấy sessions/chats của mình (`user_id` filter) |
-| **API Keys** | Lưu trong `.env`, không commit lên Git |
-| **`.gitignore`** | Loại trừ `.env`, `audio_files/`, `*.mp3`, `*.wav` |
+| **API Keys**          | Lưu trong `.env`, không commit lên Git                       |
+| **`.gitignore`**      | Loại trừ `.env`, `audio_files/`, `*.mp3`, `*.wav`            |
 
 ### Checklist trước khi deploy production
 
@@ -402,45 +404,55 @@ File `.github/workflows/ci.yml` tự động chạy khi push lên `main`:
 
 Vào `GitHub repo` → `Settings` → `Secrets and variables` → `Actions`:
 
-| Secret | Giá trị |
-|---|---|
-| `OPENAI_API_KEY` | Key từ OpenAI |
-| `GROQ_API_KEY` | Key từ Groq |
-| `SECRET_KEY` | JWT secret |
-| `DATABASE_URL` | Production DB URL |
+| Secret           | Giá trị           |
+| ---------------- | ----------------- |
+| `OPENAI_API_KEY` | Key từ OpenAI     |
+| `GROQ_API_KEY`   | Key từ Groq       |
+| `SECRET_KEY`     | JWT secret        |
+| `DATABASE_URL`   | Production DB URL |
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### Lỗi kết nối database
+
 ```
 could not translate host name "db" to address
 ```
+
 → Đang chạy local nhưng `DATABASE_URL` trỏ vào hostname Docker. Sửa `DATABASE_URL` trong `.env` thành `localhost`.
 
 ### Audio không phát được
+
 ```
 Audio playback unavailable
 ```
+
 → Backend không serve được file audio. Kiểm tra `audio_files/` có tồn tại không, và FastAPI static mount hoạt động.
 
 ### JWT token hết hạn
+
 ```
 Token đã hết hạn, vui lòng đăng nhập lại
 ```
+
 → Đăng xuất và đăng nhập lại. Token mặc định sống 7 ngày.
 
 ### Bcrypt error
+
 ```
 (trapped) error reading bcrypt version
 ```
+
 → Xung đột `passlib` + `bcrypt >= 4.0`. Đã được fix bằng cách dùng `bcrypt` trực tiếp (không qua passlib).
 
 ### Port đã bị chiếm
+
 ```
 [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000)
 ```
+
 → Có process khác dùng port 8000. Chạy `netstat -ano | findstr :8000` để tìm PID, sau đó `taskkill /PID <pid> /F`.
 
 ---
