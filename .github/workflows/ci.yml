@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build-and-test:
@@ -21,9 +21,6 @@ jobs:
 
       - name: Build Frontend Image
         run: docker build -f docker/frontend.Dockerfile -t voicechat-frontend .
-        
+
       - name: Validate Compose Stack Start
         run: docker-compose up -d
-        env:
-          OPENAI_API_KEY: fake_key_for_ci
-          GROQ_API_KEY: fake_key_for_ci
