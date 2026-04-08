@@ -91,7 +91,7 @@ def handle_401(res):
 
 def api_load_sessions():
     try:
-        res = requests.get(f"{BACKEND_URL}/sessions", headers=auth_headers(), timeout=4)
+        res = requests.get(f"{BACKEND_URL}/sessions", headers=auth_headers(), timeout=30)
         handle_401(res)
         return res.json() if res.ok else []
     except Exception:
@@ -104,7 +104,7 @@ def api_create_session(name: str):
             f"{BACKEND_URL}/sessions",
             params={"name": name},
             headers=auth_headers(),
-            timeout=5,
+            timeout=30,
         )
         handle_401(res)
         return res.json() if res.ok else None
@@ -118,7 +118,7 @@ def api_load_chats(session_id: str):
             f"{BACKEND_URL}/chats",
             params={"session_id": session_id},
             headers=auth_headers(),
-            timeout=5,
+            timeout=30,
         )
         handle_401(res)
         return res.json() if res.ok else []
@@ -169,10 +169,33 @@ def fmt_time(dt_str: str) -> str:
 
 
 def backend_is_online() -> bool:
+    """Quick check — short timeout, don't block the UI."""
     try:
-        return requests.get(f"{BACKEND_URL}/", timeout=2).ok
+        return requests.get(f"{BACKEND_URL}/", timeout=3).ok
     except Exception:
         return False
+
+
+def call_api(method: str, url: str, spinner_msg: str = "Đang kết nối...",
+             timeout: int = 65, **kwargs):
+    """
+    Wrapper for API calls with a spinner and cold-start-aware error messages.
+    Render free tier needs up to 60s to wake from sleep.
+    Returns (response | None, error_string | None)
+    """
+    try:
+        with st.spinner(spinner_msg):
+            res = requests.request(method, url, timeout=timeout, **kwargs)
+        return res, None
+    except requests.exceptions.ReadTimeout:
+        return None, (
+            "⏳ Server đang khởi động (Render cold start)... "
+            "Thường mất 30-60 giây. Vui lòng thử lại!"
+        )
+    except requests.exceptions.ConnectionError:
+        return None, "❌ Không kết nối được backend. Kiểm tra BACKEND_URL."
+    except Exception as e:
+        return None, f"❌ Lỗi: {e}"
 
 
 # ─── Session State Init ───────────────────────────────────────────────────────── #
@@ -202,7 +225,7 @@ if not st.session_state.auth_token:
         <div style="text-align:center;margin:40px 0 32px 0">
             <div style="font-size:3rem">🎤</div>
             <h1 style="margin:8px 0 4px">中文语音助手</h1>
-            <p style="color:#888;margin:0">AI Voice Chat — GPT-4o-mini + Groq Whisper</p>
+            <p style="color:#888;margin:0">AI Voice Chat</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -235,59 +258,57 @@ if not st.session_state.auth_token:
                 if not username or not password:
                     st.error("Vui lòng nhập đầy đủ thông tin!")
                 else:
-                    try:
-                        res = requests.post(
-                            f"{BACKEND_URL}/auth/login",
-                            json={"username": username, "password": password},
-                            timeout=10,
-                        )
-                        if res.ok:
-                            data = res.json()
-                            st.session_state.auth_token = data["token"]
-                            st.session_state.auth_user = data["username"]
-                            st.success(f"✅ Chào mừng, {data['username']}!")
-                            st.rerun()
-                        else:
-                            try:
-                                detail = res.json().get("detail", f"Lỗi {res.status_code}")
-                            except Exception:
-                                detail = f"Server lỗi {res.status_code}: {res.text[:200]}"
-                            st.error(f"❌ {detail}")
-                    except requests.exceptions.ConnectionError:
-                        st.error("❌ Không kết nối được backend. Hãy chắc chắn uvicorn đang chạy.")
-                    except Exception as e:
-                        st.error(f"❌ Lỗi: {e}")
+                    res, err = call_api(
+                        "POST",
+                        f"{BACKEND_URL}/auth/login",
+                        spinner_msg="🔐 Đang đăng nhập... (server có thể mất 30-60 giây để khởi động)",
+                        timeout=65,
+                        json={"username": username, "password": password},
+                    )
+                    if err:
+                        st.warning(err)
+                    elif res.ok:
+                        data = res.json()
+                        st.session_state.auth_token = data["token"]
+                        st.session_state.auth_user = data["username"]
+                        st.success(f"✅ Chào mừng, {data['username']}!")
+                        st.rerun()
+                    else:
+                        try:
+                            detail = res.json().get("detail", f"Lỗi {res.status_code}")
+                        except Exception:
+                            detail = f"Server lỗi {res.status_code}"
+                        st.error(f"❌ {detail}")
         else:
             if st.button("Tạo tài khoản & Đăng nhập", type="primary", use_container_width=True):
                 if not username or not password:
                     st.error("Vui lòng nhập đầy đủ thông tin!")
                 else:
-                    try:
-                        res = requests.post(
-                            f"{BACKEND_URL}/auth/register",
-                            json={"username": username, "password": password},
-                            timeout=10,
-                        )
-                        if res.ok:
-                            data = res.json()
-                            st.session_state.auth_token = data["token"]
-                            st.session_state.auth_user = data["username"]
-                            st.success(f"✅ Tài khoản '{data['username']}' đã được tạo!")
-                            st.rerun()
-                        else:
-                            try:
-                                detail = res.json().get("detail", f"Lỗi {res.status_code}")
-                            except Exception:
-                                detail = f"Server lỗi {res.status_code}: {res.text[:200]}"
-                            st.error(f"❌ {detail}")
-                    except requests.exceptions.ConnectionError:
-                        st.error("❌ Không kết nối được backend. Hãy chắc chắn uvicorn đang chạy.")
-                    except Exception as e:
-                        st.error(f"❌ Lỗi: {e}")
+                    res, err = call_api(
+                        "POST",
+                        f"{BACKEND_URL}/auth/register",
+                        spinner_msg="📝 Đang tạo tài khoản... (server có thể mất 30-60 giây để khởi động)",
+                        timeout=65,
+                        json={"username": username, "password": password},
+                    )
+                    if err:
+                        st.warning(err)
+                    elif res.ok:
+                        data = res.json()
+                        st.session_state.auth_token = data["token"]
+                        st.session_state.auth_user = data["username"]
+                        st.success(f"✅ Tài khoản '{data['username']}' đã được tạo!")
+                        st.rerun()
+                    else:
+                        try:
+                            detail = res.json().get("detail", f"Lỗi {res.status_code}")
+                        except Exception:
+                            detail = f"Server lỗi {res.status_code}"
+                        st.error(f"❌ {detail}")
 
         st.markdown("""
         <div style="text-align:center;margin-top:24px;color:#555;font-size:12px">
-            Dữ liệu chat được mã hóa và riêng tư theo từng tài khoản
+            Dữ liệu chat được mã hóa và riêng tư theo từng tài khoản - By tientho201
         </div>
         """, unsafe_allow_html=True)
 
