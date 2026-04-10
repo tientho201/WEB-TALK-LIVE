@@ -8,7 +8,87 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 
-# ─── Page Config ─────────────────────────────────────────────────────────────── #
+# ─── Bilingual UI Text ────────────────────────────────────────────────────────── #
+LANG_UI = {
+    "zh": {
+        "app_title":       "中文语音助手",
+        "app_subtitle":    "AI Voice Chat",
+        "new_chat":        "➕  新建对话",
+        "history":         "**💬 历史记录**",
+        "logout":          "🚪 退出登录",
+        "online":          "🟢 服务器在线",
+        "offline":         "🔴 服务器离线",
+        "empty_title":     "开始对话",
+        "empty_sub":       "录音或上传音频文件，AI 将用<strong>中文</strong>回答并记住对话历史。",
+        "user_thinking":   "🎙️ _已录音，正在分析..._",
+        "bot_thinking":    "🧠 AI 正在用中文思考...",
+        "input_mic":       "🎙️ 录音",
+        "input_upload":    "📎 上传音频",
+        "send":            "➤ 发送",
+        "processing":      "⏳ 处理中...",
+        "warn_no_audio":   "⚠️ 请先录音或上传音频文件！",
+        "session_default": "对话",
+        "session_prefix":  "对话",
+        "lang_label":      "🌐 语言",
+        "login_title":     "中文语音助手",
+        "login_sub":       "AI Voice Chat",
+        "tab_login":       "🔐  登录",
+        "tab_register":    "📝  注册账户",
+        "field_user":      "👤 用户名",
+        "field_pass":      "🔑 密码",
+        "placeholder_user":"输入用户名（至少3个字符）...",
+        "placeholder_pass":"输入密码（至少6个字符）...",
+        "btn_login":       "登录",
+        "btn_register":    "注册并登录",
+        "spin_login":      "🔐 正在登录...（服务器可能需要30-60秒启动）",
+        "spin_register":   "📝 正在注册...（服务器可能需要30-60秒启动）",
+        "footer_text":     "数据加密，每个账户独立隔离 - By tientho201",
+        "welcome":         "✅ 欢迎，{username}！",
+        "registered":      "✅ 账户 '{username}' 创建成功！",
+        "err_fill":        "请填写完整信息！",
+        "msgs":            "条消息",
+    },
+    "vi": {
+        "app_title":       "Trợ Lý Giọng Nói AI",
+        "app_subtitle":    "AI Voice Chat",
+        "new_chat":        "➕  Cuộc trò chuyện mới",
+        "history":         "**💬 Lịch sử**",
+        "logout":          "🚪 Đăng xuất",
+        "online":          "🟢 Backend online",
+        "offline":         "🔴 Backend offline",
+        "empty_title":     "Bắt đầu cuộc trò chuyện",
+        "empty_sub":       "Ghi âm hoặc tải file âm thanh bên dưới, AI trả lời bằng <strong>tiếng Việt</strong> và nhớ lịch sử hội thoại.",
+        "user_thinking":   "🎙️ _Đã nhận giọng nói — đang phân tích..._",
+        "bot_thinking":    "🧠 AI đang suy nghĩ bằng tiếng Việt...",
+        "input_mic":       "🎙️ Ghi âm giọng nói",
+        "input_upload":    "📎 Tải lên file âm thanh",
+        "send":            "➤ Gửi",
+        "processing":      "⏳ Đang xử lý...",
+        "warn_no_audio":   "⚠️ Vui lòng ghi âm hoặc tải lên file âm thanh trước!",
+        "session_default": "Hội thoại",
+        "session_prefix":  "Hội thoại",
+        "lang_label":      "🌐 Ngôn ngữ",
+        "login_title":     "Trợ Lý Giọng Nói AI",
+        "login_sub":       "AI Voice Chat",
+        "tab_login":       "🔐  Đăng nhập",
+        "tab_register":    "📝  Đăng ký tài khoản",
+        "field_user":      "👤 Tên đăng nhập",
+        "field_pass":      "🔑 Mật khẩu",
+        "placeholder_user":"Nhập username (ít nhất 3 ký tự)...",
+        "placeholder_pass":"Nhập mật khẩu (ít nhất 6 ký tự)...",
+        "btn_login":       "Đăng nhập",
+        "btn_register":    "Tạo tài khoản & Đăng nhập",
+        "spin_login":      "🔐 Đang đăng nhập... (server có thể mất 30-60 giây để khởi động)",
+        "spin_register":   "📝 Đang tạo tài khoản... (server có thể mất 30-60 giây để khởi động)",
+        "footer_text":     "Dữ liệu chat được mã hóa và riêng tư theo từng tài khoản - By tientho201",
+        "welcome":         "✅ Chào mừng, {username}!",
+        "registered":      "✅ Tài khoản '{username}' đã được tạo!",
+        "err_fill":        "Vui lòng nhập đầy đủ thông tin!",
+        "msgs":            "tin nhắn",
+    },
+}
+
+
 st.set_page_config(
     page_title="中文语音助手",
     page_icon="🎤",
@@ -210,28 +290,68 @@ for key, default in [
     ("pending_bytes", None),
     ("pending_filename", None),
     ("pending_mimetype", None),
+    ("lang", "vi"),  # Default language: Vietnamese
+    ("stt_warning", None),  # Persistent STT error message across reruns
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
+
+# Shortcut helper
+def T(key: str) -> str:
+    return LANG_UI.get(st.session_state.lang, LANG_UI["vi"]).get(key, key)
+
+
+import re as _re
+
+def display_session_name(name: str) -> str:
+    """Translate default session names on-the-fly (display only, no DB write).
+    '\u5bf9\u8bdd N' <-> 'H\u1ed9i tho\u1ea1i N' depending on current language.
+    """
+    lang = st.session_state.lang
+    if lang == "vi":
+        m = _re.match(r"\u5bf9\u8bdd\s*(\d+)", name)
+        if m:
+            return f"H\u1ed9i tho\u1ea1i {m.group(1)}"
+    elif lang == "zh":
+        m = _re.match(r"H\u1ed9i tho\u1ea1i\s*(\d+)", name)
+        if m:
+            return f"\u5bf9\u8bdd {m.group(1)}"
+    return name
 
 
 # ════════════════════════════════════════════════════════════════════════════════ #
 #  AUTH PAGE
 # ════════════════════════════════════════════════════════════════════════════════ #
 if not st.session_state.auth_token:
+    # Language switcher on login page
+    _, _sw, _ = st.columns([2, 1, 2])
+    with _sw:
+        lang_choice = st.radio(
+            "🌐 Language",
+            ["🇻🇳 Việt", "🇨🇳 中文"],
+            horizontal=True,
+            key="login_lang_radio",
+            label_visibility="collapsed",
+            index=0 if st.session_state.lang == "vi" else 1,
+        )
+        new_lang = "vi" if "Việt" in lang_choice else "zh"
+        if new_lang != st.session_state.lang:
+            st.session_state.lang = new_lang
+            st.rerun()
+
     _, center, _ = st.columns([1, 1.4, 1])
     with center:
-        st.markdown("""
-        <div style="text-align:center;margin:40px 0 32px 0">
+        st.markdown(f"""
+        <div style="text-align:center;margin:20px 0 32px 0">
             <div style="font-size:3rem">🎤</div>
-            <h1 style="margin:8px 0 4px">中文语音助手</h1>
-            <p style="color:#888;margin:0">AI Voice Chat</p>
+            <h1 style="margin:8px 0 4px">{T('login_title')}</h1>
+            <p style="color:#888;margin:0">{T('login_sub')}</p>
         </div>
         """, unsafe_allow_html=True)
 
         mode = st.radio(
             "mode",
-            ["🔐  Đăng nhập", "📝  Đăng ký tài khoản"],
+            [T("tab_login"), T("tab_register")],
             horizontal=True,
             key="auth_mode",
             label_visibility="collapsed",
@@ -240,28 +360,28 @@ if not st.session_state.auth_token:
         st.markdown("<br>", unsafe_allow_html=True)
 
         username = st.text_input(
-            "👤 Tên đăng nhập",
-            placeholder="Nhập username (ít nhất 3 ký tự)...",
+            T("field_user"),
+            placeholder=T("placeholder_user"),
             key="auth_username",
         )
         password = st.text_input(
-            "🔑 Mật khẩu",
+            T("field_pass"),
             type="password",
-            placeholder="Nhập mật khẩu (ít nhất 6 ký tự)...",
+            placeholder=T("placeholder_pass"),
             key="auth_password",
         )
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        if mode == "🔐  Đăng nhập":
-            if st.button("Đăng nhập", type="primary", use_container_width=True):
+        if mode == T("tab_login"):
+            if st.button(T("btn_login"), type="primary", use_container_width=True):
                 if not username or not password:
-                    st.error("Vui lòng nhập đầy đủ thông tin!")
+                    st.error(T("err_fill"))
                 else:
                     res, err = call_api(
                         "POST",
                         f"{BACKEND_URL}/auth/login",
-                        spinner_msg="🔐 Đang đăng nhập... (server có thể mất 30-60 giây để khởi động)",
+                        spinner_msg=T("spin_login"),
                         timeout=65,
                         json={"username": username, "password": password},
                     )
@@ -271,23 +391,23 @@ if not st.session_state.auth_token:
                         data = res.json()
                         st.session_state.auth_token = data["token"]
                         st.session_state.auth_user = data["username"]
-                        st.success(f"✅ Chào mừng, {data['username']}!")
+                        st.success(T("welcome").format(username=data["username"]))
                         st.rerun()
                     else:
                         try:
-                            detail = res.json().get("detail", f"Lỗi {res.status_code}")
+                            detail = res.json().get("detail", f"Error {res.status_code}")
                         except Exception:
-                            detail = f"Server lỗi {res.status_code}"
+                            detail = f"Server error {res.status_code}"
                         st.error(f"❌ {detail}")
         else:
-            if st.button("Tạo tài khoản & Đăng nhập", type="primary", use_container_width=True):
+            if st.button(T("btn_register"), type="primary", use_container_width=True):
                 if not username or not password:
-                    st.error("Vui lòng nhập đầy đủ thông tin!")
+                    st.error(T("err_fill"))
                 else:
                     res, err = call_api(
                         "POST",
                         f"{BACKEND_URL}/auth/register",
-                        spinner_msg="📝 Đang tạo tài khoản... (server có thể mất 30-60 giây để khởi động)",
+                        spinner_msg=T("spin_register"),
                         timeout=65,
                         json={"username": username, "password": password},
                     )
@@ -297,22 +417,22 @@ if not st.session_state.auth_token:
                         data = res.json()
                         st.session_state.auth_token = data["token"]
                         st.session_state.auth_user = data["username"]
-                        st.success(f"✅ Tài khoản '{data['username']}' đã được tạo!")
+                        st.success(T("registered").format(username=data["username"]))
                         st.rerun()
                     else:
                         try:
-                            detail = res.json().get("detail", f"Lỗi {res.status_code}")
+                            detail = res.json().get("detail", f"Error {res.status_code}")
                         except Exception:
-                            detail = f"Server lỗi {res.status_code}"
+                            detail = f"Server error {res.status_code}"
                         st.error(f"❌ {detail}")
 
-        st.markdown("""
+        st.markdown(f"""
         <div style="text-align:center;margin-top:24px;color:#555;font-size:12px">
-            Dữ liệu chat được mã hóa và riêng tư theo từng tài khoản - By tientho201
+            {T('footer_text')}
         </div>
         """, unsafe_allow_html=True)
 
-    st.stop()  # Don't render anything below this if not logged in
+    st.stop()
 
 
 # ════════════════════════════════════════════════════════════════════════════════ #
@@ -329,7 +449,7 @@ if not st.session_state.app_initialized:
 
 # Auto-create first session
 if not st.session_state.sessions:
-    first = api_create_session("对话 1")
+    first = api_create_session(f"{T('session_prefix')} 1")
     if first:
         st.session_state.sessions = [first]
         st.session_state.current_session_id = first["id"]
@@ -347,13 +467,28 @@ current_chats = st.session_state.chat_histories.get(current_sid, [])
 
 # ─── Sidebar ─────────────────────────────────────────────────────────────────── #
 with st.sidebar:
-    st.markdown(f"## 🎤 中文语音助手")
+    st.markdown(f"## 🎤 {T('app_title')}")
     st.caption(f"👤 {st.session_state.auth_user}")
     st.divider()
 
-    if st.button("➕  Cuộc trò chuyện mới", use_container_width=True, type="primary", key="btn_new_chat"):
+    # ── Language switcher ──
+    lang_choice = st.radio(
+        T("lang_label"),
+        ["🇻🇳 Tiếng Việt", "🇨🇳 中文"],
+        horizontal=True,
+        key="sidebar_lang",
+        index=0 if st.session_state.lang == "vi" else 1,
+    )
+    new_lang = "vi" if "Việt" in lang_choice else "zh"
+    if new_lang != st.session_state.lang:
+        st.session_state.lang = new_lang
+        st.rerun()
+
+    st.divider()
+
+    if st.button(T("new_chat"), use_container_width=True, type="primary", key="btn_new_chat"):
         count = len(st.session_state.sessions) + 1
-        new_sess = api_create_session(f"对话 {count}")
+        new_sess = api_create_session(f"{T('session_prefix')} {count}")
         if new_sess:
             st.session_state.sessions.insert(0, new_sess)
             st.session_state.current_session_id = new_sess["id"]
@@ -361,40 +496,45 @@ with st.sidebar:
             st.session_state.pending_bytes = None
             st.rerun()
 
-    st.markdown("**💬 Lịch sử**")
+    st.markdown(T("history"))
 
     for sess in st.session_state.sessions:
         is_active = sess["id"] == current_sid
         time_str = fmt_time(str(sess.get("created_at", "")))
-        label = f"{'▶  ' if is_active else ''}{sess['name']}  {time_str}"
+        disp_name = display_session_name(sess["name"])
+        label = f"{'▶  ' if is_active else ''}{disp_name}  {time_str}"
         if st.button(label, key=f"sess_{sess['id']}", use_container_width=True,
                      type="primary" if is_active else "secondary"):
             if sess["id"] != current_sid:
                 st.session_state.current_session_id = sess["id"]
                 st.session_state.pending_bytes = None
+                st.session_state.stt_warning = None  # Clear warning on session switch
                 st.rerun()
 
     st.divider()
-    if st.button("🚪 Đăng xuất", use_container_width=True, key="btn_logout"):
+    if st.button(T("logout"), use_container_width=True, key="btn_logout"):
         for k in ["auth_token", "auth_user", "app_initialized", "sessions",
                   "chat_histories", "audio_cache", "current_session_id"]:
-            st.session_state[k] = None if "token" in k or "user" in k else ([] if k == "sessions" else ({} if "hist" in k or "cache" in k else False))
+            st.session_state[k] = None if "token" in k or "user" in k else (
+                [] if k == "sessions" else ({} if "hist" in k or "cache" in k else False))
         st.rerun()
 
-    st.caption("🟢 Backend online" if backend_is_online() else "🔴 Backend offline")
+    st.caption(T("online") if backend_is_online() else T("offline"))
 
 
 # ─── Main Header ─────────────────────────────────────────────────────────────── #
-current_session_name = next(
-    (s["name"] for s in st.session_state.sessions if s["id"] == current_sid), "对话"
+_raw_session_name = next(
+    (s["name"] for s in st.session_state.sessions if s["id"] == current_sid),
+    T("session_default")
 )
+current_session_name = display_session_name(_raw_session_name)
 col_h1, col_h2 = st.columns([6, 1])
 with col_h1:
     st.markdown(f"### {current_session_name}")
 with col_h2:
     st.markdown(
         f"<div style='text-align:right;color:#888;font-size:12px;padding-top:14px'>"
-        f"{len(current_chats)} tin nhắn</div>", unsafe_allow_html=True,
+        f"{len(current_chats)} {T('msgs')}</div>", unsafe_allow_html=True,
     )
 
 
@@ -403,20 +543,17 @@ chat_box = st.container(height=520, border=True)
 
 with chat_box:
     if not current_chats and not st.session_state.get("pending_bytes"):
-        st.markdown("""
+        st.markdown(f"""
             <div style="display:flex;flex-direction:column;align-items:center;
                         justify-content:center;height:420px;text-align:center;opacity:.5;">
                 <div style="font-size:3rem">🎙️</div>
-                <div style="font-size:1.1rem;margin-top:10px;font-weight:600">Bắt đầu cuộc trò chuyện</div>
+                <div style="font-size:1.1rem;margin-top:10px;font-weight:600">{T('empty_title')}</div>
                 <div style="font-size:0.82rem;margin-top:6px">
-                    Ghi âm hoặc tải file âm thanh bên dưới.<br>
-                    AI phản hồi bằng <strong>tiếng Trung</strong> và nhớ lịch sử hội thoại.
+                    {T('empty_sub')}
                 </div>
             </div>
         """, unsafe_allow_html=True)
     else:
-        # Only show audio for the last AUDIO_PLAYER_LIMIT messages.
-        # Older messages: text only (avoids N sequential HTTP requests on every render)
         audio_start_idx = max(0, len(current_chats) - AUDIO_PLAYER_LIMIT)
 
         for idx, chat in enumerate(current_chats):
@@ -424,7 +561,6 @@ with chat_box:
                 st.markdown(chat["user_text"])
             with st.chat_message("assistant"):
                 st.markdown(chat["bot_text"])
-                # Fetch audio only for recent messages
                 if idx >= audio_start_idx:
                     audio_bytes = get_audio_bytes(chat["audio_path"])
                     if audio_bytes:
@@ -432,9 +568,9 @@ with chat_box:
 
         if st.session_state.get("pending_bytes"):
             with st.chat_message("user"):
-                st.markdown("🎙️ _Đã nhận giọng nói — đang phân tích..._")
+                st.markdown(T("user_thinking"))
             with st.chat_message("assistant"):
-                with st.spinner("🧠 AI đang suy nghĩ bằng tiếng Trung..."):
+                with st.spinner(T("bot_thinking")):
                     try:
                         files = {
                             "audio": (
@@ -443,7 +579,8 @@ with chat_box:
                                 st.session_state.pending_mimetype,
                             )
                         }
-                        form_data = {"session_id": current_sid} if current_sid else {}
+                        form_data = {"session_id": current_sid,
+                                     "language": st.session_state.lang}
                         res = requests.post(
                             f"{BACKEND_URL}/chat",
                             files=files,
@@ -453,6 +590,7 @@ with chat_box:
                         )
                         if res.ok:
                             result = res.json()
+                            st.session_state.stt_warning = None  # Clear warning on success
                             st.session_state.chat_histories[current_sid].append(result)
                             audio_url = (result["audio_path"] if result["audio_path"].startswith("http")
                                          else f"{BACKEND_URL}/{result['audio_path']}")
@@ -462,11 +600,21 @@ with chat_box:
                                     st.session_state.audio_cache[result["audio_path"]] = ar.content
                             except Exception:
                                 pass
+                        elif res.status_code == 400:
+                            # STT hallucination / no speech — persist warning across rerun
+                            try:
+                                msg = res.json().get("detail", "Không nhận diện được giọng nói.")
+                            except Exception:
+                                msg = "Không nhận diện được giọng nói."
+                            st.session_state.stt_warning = msg  # Saved → survives rerun
                         else:
                             handle_401(res)
-                            st.error(f"❌ {res.json().get('detail', res.text)}")
+                            try:
+                                st.error(f"❌ {res.json().get('detail', res.text)}")
+                            except Exception:
+                                st.error(f"❌ Lỗi {res.status_code}")
                     except Exception as e:
-                        st.error(f"❌ Không kết nối backend: {e}")
+                        st.error(f"❌ {e}")
                     finally:
                         st.session_state.pending_bytes = None
                         st.session_state.pending_filename = None
@@ -474,18 +622,29 @@ with chat_box:
                     st.rerun()
 
 
+# ─── Persistent STT Warning Banner ───────────────────────────────────────────── #
+if st.session_state.get("stt_warning"):
+    col_w, col_x = st.columns([10, 1])
+    with col_w:
+        st.warning(f"🎙️ {st.session_state.stt_warning}")
+    with col_x:
+        if st.button("✕", key="dismiss_stt_warn", help="Đóng"):
+            st.session_state.stt_warning = None
+            st.rerun()
+
+
 # ─── Input Bar ───────────────────────────────────────────────────────────────── #
 st.divider()
 col1, col2, col3 = st.columns([2, 2, 1])
 with col1:
-    audio_value = st.audio_input("🎙️ Ghi âm giọng nói", key="recorder")
+    audio_value = st.audio_input(T("input_mic"), key="recorder")
 with col2:
-    uploaded_file = st.file_uploader("📎 Tải lên file âm thanh", type=["wav", "mp3", "m4a"], key="uploader")
+    uploaded_file = st.file_uploader(T("input_upload"), type=["wav", "mp3", "m4a"], key="uploader")
 with col3:
     st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
     is_busy = bool(st.session_state.get("pending_bytes"))
     send_clicked = st.button(
-        "⏳ Đang xử lý..." if is_busy else "➤ Gửi",
+        T("processing") if is_busy else T("send"),
         type="primary", use_container_width=True, disabled=is_busy, key="btn_send",
     )
 
@@ -505,4 +664,5 @@ if send_clicked:
         st.session_state.pending_mimetype = mimetype
         st.rerun()
     else:
-        st.warning("⚠️ Vui lòng ghi âm hoặc tải lên file âm thanh trước!")
+        st.warning(T("warn_no_audio"))
+
