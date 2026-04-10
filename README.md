@@ -2,7 +2,7 @@
 
 > Ứng dụng voice chat tiếng Trung full-stack: **Giọng nói → Groq Whisper STT → GPT-4o-mini → Edge TTS → Âm thanh**
 
-[![CI](https://github.com/YOUR_USERNAME/WEB-TALK-LIVE/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/WEB-TALK-LIVE/actions)
+[![CI](https://github.com/tientho201/WEB-TALK-LIVE/actions/workflows/ci.yml/badge.svg)](https://github.com/tientho201/WEB-TALK-LIVE/actions)
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.37+-red)
