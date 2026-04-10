@@ -16,24 +16,21 @@ _LANG_CONFIGS = {
 # Known Whisper hallucination phrases (case-insensitive substring match)
 # Whisper hallucinates these when it receives silence, noise, or unclear audio.
 _HALLUCINATION_TOKENS = [
-    "subscribe",
-    "ghiền mì gõ",
-    "like and subscribe",
-    "thank you for watching",
-    "please subscribe",
-    "đăng ký kênh",
-    "bấm vào đây",
-    "xem thêm video",
-    "chia sẻ video",
-    "cảm ơn đã xem",
-    "thanks for watching",
-    "don't forget to",
-    "hit the bell",
-    "comment below",
-    "ご视聴ありがとう",
-    "谢谢观看",
-    "记得订阅",
-    "点赞关注",
+    # English
+    "subscribe", "like and subscribe", "thank you for watching", "thanks for watching",
+    "please subscribe", "don't forget to", "hit the bell", "comment below", "amara.org",
+    # Vietnamese
+    "ghiền mì gõ", "đăng ký kênh", "bấm vào đây", "xem thêm video",
+    "chia sẻ video", "cảm ơn đã xem",
+    # Chinese (Simplified & Traditional)
+    "谢谢观看", "感謝觀看", "请订阅", "記得訂閱", "记得订阅",
+    "点赞关注", "點贊關注", "点赞和订阅", "点赞留言", "转发", 
+    "字幕由", "字幕提供", "翻译由", "翻译提供",
+    "明镜与点点", "明镜频道", "打赏支持",
+    "本期视频", "下期再见", "更多精彩视频",
+    "未经允许", "请勿转载", "欢迎来到我的频道", ,"文字幕志愿者"
+    # Japanese
+    "ご视聴ありがとう", "ご視聴ありがとう",
 ]
 
 # Minimum number of characters for a valid transcription
