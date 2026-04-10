@@ -6,7 +6,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, WebSock
 from sqlalchemy.orm import Session
 from backend.database.db import get_db, Chat, ChatSession
 from backend.routes.auth import get_current_user
-from backend.services.stt_groq import transcribe_audio
+from backend.services.stt_groq import transcribe_audio, STTHallucinationError
 from backend.services.llm_openai import generate_response
 from backend.services.tts_edge import generate_audio_sync
 from backend.services.tts_openai import generate_audio_fallback
@@ -54,6 +54,7 @@ def get_sessions(
 async def process_chat(
     audio: UploadFile = File(...),
     session_id: Optional[str] = Form(None),
+    language: str = Form("zh"),           # "zh" = Chinese, "vi" = Vietnamese
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -65,8 +66,8 @@ async def process_chat(
         with open(input_path, "wb") as buffer:
             shutil.copyfileobj(audio.file, buffer)
 
-        # 2. Speech → Text
-        user_text = transcribe_audio(input_path)
+        # 2. Speech → Text (language-aware)
+        user_text = transcribe_audio(input_path, language=language)
 
         # 3. Fetch session chat history for GPT context
         chat_history: List[Dict] = []
@@ -77,21 +78,23 @@ async def process_chat(
                 .order_by(Chat.created_at.asc())
                 .all()
             )
-            chat_history = [{"user_text": c.user_text, "bot_text": c.bot_text} for c in history_records]
+            chat_history = [{"user_text": c.user_text, "bot_text": c.bot_text}
+                            for c in history_records]
 
-        # 4. Text → GPT (with history) → Chinese response
-        bot_text = generate_response(user_text, chat_history=chat_history)
+        # 4. Text → GPT (language-aware, with history)
+        bot_text = generate_response(user_text, chat_history=chat_history,
+                                     language=language)
 
-        # 5. Text → Audio
+        # 5. Text → Audio (language-aware voice)
         output_filename = f"{uuid.uuid4()}_output.mp3"
         output_path = os.path.join(AUDIO_DIR, output_filename)
-        success = await generate_audio_sync(bot_text, output_path)
+        success = await generate_audio_sync(bot_text, output_path, language=language)
         if not success:
             success = await generate_audio_fallback(bot_text, output_path)
             if not success:
                 raise HTTPException(status_code=500, detail="Both TTS engines failed.")
 
-        # 6. Store audio (local or Supabase)
+        # 6. Store audio
         stored_audio_path = save_audio_file(output_path, output_filename)
 
         # 7. Save to DB
@@ -105,10 +108,14 @@ async def process_chat(
         db.commit()
         db.refresh(chat_record)
 
-        return ChatResponse(user_text=user_text, bot_text=bot_text, audio_path=stored_audio_path)
+        return ChatResponse(user_text=user_text, bot_text=bot_text,
+                            audio_path=stored_audio_path)
 
     except HTTPException:
         raise
+    except STTHallucinationError as e:
+        # STT detected noise/silence or a hallucination — tell the client clearly
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
